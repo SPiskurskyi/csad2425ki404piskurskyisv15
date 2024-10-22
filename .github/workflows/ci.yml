@@ -1,0 +1,73 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  build-client:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y libserialport-dev
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@v3.23.0
+        
+      - name: Create build directory
+        run: mkdir -p build
+  
+      - name: Configure CMake
+        run: |
+          cd build
+          cmake ../clientSide
+
+      - name: Build client using CMake
+        run: |
+          cd build
+          cmake --build .
+
+      #- name: Run tests
+      #  run: |
+      #    TBD
+        
+  build-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Arduino CLI
+        uses: arduino/setup-arduino-cli@v1
+        with:
+          version: '0.19.2'
+
+      - name: Install Arduino core for AVR boards
+        run: arduino-cli core install arduino:avr
+
+      - name: Build Arduino sketch (Server)
+        run: arduino-cli compile --fqbn arduino:avr:uno serverSide/serverSide.ino
+
+      #- name: Upload Arduino sketch to board
+      #  run: arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:uno serverSide/serverSide.ino
+      # TBD: check if possible to build it by cmake 
+
+      #dummy
+      - name: Upload Arduino Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arduino-build
+          path: serverSide/build/
+
+      #- name: Run tests
+      #  run: |
+      #    TBD
