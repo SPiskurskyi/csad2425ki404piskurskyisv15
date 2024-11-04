@@ -1,0 +1,38 @@
+@startuml
+actor Client as SW
+participant "Game Controller" as Controller
+participant "Configuration" as CONF
+participant "Model" as HW
+
+SW -> Controller : Start Game
+Controller -> SW : Prompt for New Game? (y/n)
+
+alt New Game (y)
+    Controller -> CONF : Load Configuration
+    CONF --> Controller : Configuration
+    Controller -> HW: REQUEST_CMD::InformNewGame
+    HW --> Controller : RESPONSE_CMD::AcknowledgeGame
+else Load Game (n)
+    Controller -> CONF : Load State
+    CONF --> Controller : State
+    Controller -> HW: REQUEST_CMD::InformLoadGame
+    HW --> Controller : RESPONSE_CMD::AcknowledgeGame
+end
+
+
+Controller -> SW : Display Board
+
+loop Game Loop
+    SW -> Controller : Make Move
+    Controller -> HW : REQUEST_CMD::RequestMove
+    HW -> HW : Check Win/Draw & Update State
+    HW --> Controller : RESPONSE_CMD::Winner | RESPONSE_CMD::Draw | RESPONSE_CMD::NextMove
+    Controller -> Controller : Update State
+    Controller -> SW : Display Board
+    alt RESPONSE_CMD::Winner
+        Controller -> SW : Game win
+    else RESPONSE_CMD::Draw
+        Controller -> SW : Game draw
+    end
+end
+@enduml

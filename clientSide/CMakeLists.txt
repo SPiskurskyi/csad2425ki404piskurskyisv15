@@ -9,7 +9,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 set(SERIAL_PORT_PATH "/dev/ttyUSB0" CACHE STRING "Serial port path")
 
-add_executable(${PROJECT_NAME} src/clientSide.cpp)
+set(SOURCES 
+    src/clientSide.cpp
+    src/serialUtils.cpp
+    src/clientCore.cpp
+    src/cfgFile.cpp
+)
+
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
