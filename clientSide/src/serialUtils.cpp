@@ -34,7 +34,7 @@ std::string serializeMove(REQUEST_CMD req_cmd, int *move) {
     return oss.str();
 }
 
-void write_to_serial(sp_port *port, std::string message) {
+void writeToSerial(sp_port *port, std::string message) {
     int result = sp_blocking_write(port, message.c_str(), message.length(), TIMEOUT_MS);
 
     if (result < 0) {
@@ -48,7 +48,7 @@ void write_to_serial(sp_port *port, std::string message) {
 #endif
 }
 
-std::string read_from_serial(sp_port *port) {
+std::string readFromSerial(sp_port *port) {
     char byte_buff[BUFF_SIZE];
     int byte_num;
     std::string received_data; 
@@ -61,7 +61,7 @@ std::string read_from_serial(sp_port *port) {
             
             received_data.append(byte_buff);
 #ifdef DEBUG
-            std::cout << "Response from Arduino: " << received_data << std::endl;
+            std::cout << "Response from server: " << received_data << std::endl;
 #endif            
             break;
         }
@@ -70,9 +70,9 @@ std::string read_from_serial(sp_port *port) {
     return received_data;
 }
 
-void wait_for_arduino_ready(sp_port *port) {
+void waitServerReady(sp_port *port) {
     char byte_buff[BUFF_SIZE];
-    std::cout << "Waiting for Arduino to be ready...\n";
+    std::cout << "Waiting for server to be ready...\n";
 
     while (1) {
         int bytes_waiting = sp_input_waiting(port);
@@ -82,7 +82,7 @@ void wait_for_arduino_ready(sp_port *port) {
 
             if (strstr(byte_buff, READY_MESSAGE) != NULL) {
 #ifdef DEBUG
-                std::cout << "Received from Arduino: " << byte_buff << std::endl;
+                std::cout << "Received from server: " << byte_buff << std::endl;
 #endif
                 break;
             }

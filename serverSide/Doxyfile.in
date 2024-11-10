@@ -1,0 +1,8 @@
+PROJECT_NAME           = "Game Server"
+OUTPUT_DIRECTORY       = "@CMAKE_CURRENT_SOURCE_DIR@/docs"
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+INPUT                  = "@CMAKE_SOURCE_DIR@/include"
+RECURSIVE              = YES
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO

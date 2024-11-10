@@ -11,6 +11,7 @@ show_usage() {
     echo "  client        Build only the client project."
     echo "  server        Build only the server project (includes upload target)."
     echo "  clean         Remove build directories for both client and server."
+    echo "  doc           Generate documentation for both client and server."
     echo "  -h, --help    Display this help and exit."
     echo
     echo "If no option is specified, both client and server will be built."
@@ -42,9 +43,23 @@ build_project() {
     cd - > /dev/null
 }
 
-clean_build() {
+generate_doc() {
+    echo "Generating documentation for both client and server..."
+
+    for project_dir in "$CLIENT_DIR" "$SERVER_DIR"; do
+        echo "Generating documentation in $project_dir..."
+        cd "$project_dir/build" || exit
+        cmake --build . --target doc
+        cd - > /dev/null
+    done
+
+    echo "Documentation generation completed."
+}
+
+clean_build() { 
     echo "Cleaning build directories..."
     rm -rf "$CLIENT_DIR/build" "$SERVER_DIR/build"
+    rm -rf "$CLIENT_DIR/docs" "$SERVER_DIR/docs"
     echo "Build directories cleaned."
 }
 
@@ -59,6 +74,9 @@ case "$1" in
     server)
         serial_port=${2:-"/dev/ttyUSB0"} # Default to "/dev/ttyUSB0" if not provided
         build_project "$SERVER_DIR" "true" "$serial_port"
+        ;;
+    doc)
+        generate_doc
         ;;
     -h|--help)
         show_usage
@@ -78,4 +96,3 @@ case "$1" in
 esac
 
 echo "Build process completed."
-

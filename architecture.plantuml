@@ -24,10 +24,10 @@ Controller -> SW : Display Board
 
 loop Game Loop
     SW -> Controller : Make Move
+    Controller -> Controller : Update State
     Controller -> HW : REQUEST_CMD::RequestMove
     HW -> HW : Check Win/Draw & Update State
     HW --> Controller : RESPONSE_CMD::Winner | RESPONSE_CMD::Draw | RESPONSE_CMD::NextMove
-    Controller -> Controller : Update State
     Controller -> SW : Display Board
     alt RESPONSE_CMD::Winner
         Controller -> SW : Game win
