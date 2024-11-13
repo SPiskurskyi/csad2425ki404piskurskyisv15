@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y libserialport-dev
+        run: sudo apt-get update && sudo apt-get install -y libserialport-dev doxygen
 
       - name: Setup CMake
         uses: lukka/get-cmake@v3.23.0
@@ -34,6 +34,17 @@ jobs:
         run: |
           cd build
           cmake --build .
+
+      - name: Generate client documentation
+        run: |
+          cd build
+          cmake --build . --target doc
+
+      - name: Upload client documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-docs
+          path: build/docs
 
       #- name: Run tests
       #  run: |
@@ -54,12 +65,11 @@ jobs:
       - name: Install Arduino core for AVR boards
         run: arduino-cli core install arduino:avr
 
+      - name: Install Doxygen
+        run: sudo apt-get update && sudo apt-get install -y doxygen
+
       - name: Build Arduino sketch (Server)
         run: arduino-cli compile --fqbn arduino:avr:uno serverSide/serverSide.ino
-
-      #- name: Upload Arduino sketch to board
-      #  run: arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:uno serverSide/serverSide.ino
-      # TBD: check if possible to build it by cmake 
 
       #dummy
       - name: Upload Arduino Build Artifact
@@ -67,6 +77,19 @@ jobs:
         with:
           name: arduino-build
           path: serverSide/build/
+
+      - name: Generate server documentation
+        run: |
+          mkdir -p serverSide/build
+          cd serverSide/build
+          cmake ..
+          cmake --build . --target doc
+
+      - name: Upload server documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-docs
+          path: serverSide/build/docs
 
       #- name: Run tests
       #  run: |

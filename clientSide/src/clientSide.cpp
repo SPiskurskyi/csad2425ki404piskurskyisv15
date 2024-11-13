@@ -36,7 +36,7 @@ int main() {
     }
 
     flushSerialBuffer(port);
-    wait_for_arduino_ready(port);
+    waitServerReady(port);
 
     setup(&gameState);
 

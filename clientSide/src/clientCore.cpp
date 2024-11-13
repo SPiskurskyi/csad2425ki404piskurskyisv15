@@ -9,6 +9,8 @@
 
 const char* CFG_FILE_NAME = "configuration.ini";
 
+static bool checkWin(char player, const char board[10]);
+
 void sendRequest(REQUEST_CMD req_cmd, void *data) {
     std::string message = "";
     gamestate_t* gameSate = nullptr;
@@ -27,11 +29,11 @@ void sendRequest(REQUEST_CMD req_cmd, void *data) {
             break;
     }
 
-    write_to_serial(port, message);
+    writeToSerial(port, message);
 }
 
-FINISHED processResponse(gamestate_t *gameState, int position) {
-    std::string message = read_from_serial(port);
+FINISHED processResponse(gamestate_t *gameState) {
+    std::string message = readFromSerial(port);
     RESPONSE_CMD res_cmd = static_cast<RESPONSE_CMD>(std::stoi(message));
 
     switch (res_cmd) {
@@ -39,13 +41,10 @@ FINISHED processResponse(gamestate_t *gameState, int position) {
             std::cout << "Acknowledgment of game start received from hardware." << std::endl;
             break;
         case RESPONSE_CMD::NextMove:
-            gameState->board[position] = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
             break;
         case RESPONSE_CMD::Winner:
-            gameState->board[position] = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
             return FINISHED::WINNER;
         case RESPONSE_CMD::Draw:
-            gameState->board[position] = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
             return FINISHED::DRAW;
         default:
             std::cout << "unrecognized response type..." << std::endl;
@@ -69,7 +68,7 @@ void setup(gamestate_t *gameState) {
             sendRequest(REQUEST_CMD::InformLoadGame, gameState);
         }
         
-        processResponse(gameState, 0); // receive acknowledgement
+        processResponse(gameState); // receive acknowledgement
 
         gameLoop(gameState);  
         break;
@@ -85,8 +84,8 @@ void gameLoop(gamestate_t *gameState) {
     displayBoard(gameState->board);
     
     while (true) {
-        move = makeMove(gameState);
-        finished = processResponse(gameState, move);
+        makeMove(gameState);
+        finished = processResponse(gameState);
         displayBoard(gameState->board);
         if (finished == FINISHED::DRAW) {
             std::cout << "GAME DRAW!" << std::endl;
@@ -101,7 +100,7 @@ void gameLoop(gamestate_t *gameState) {
     }
 }
 
-int makeMove(GameState *gameState) {
+void makeMove(GameState *gameState) {
     int move = -1;
 
     switch (gameState->mode) {
@@ -122,7 +121,6 @@ int makeMove(GameState *gameState) {
             break;
     }
     sendRequest(REQUEST_CMD::RequestMove, &move);
-    return move;
 }
 
 int humanMove(GameState *gameState) {
@@ -143,8 +141,7 @@ int humanMove(GameState *gameState) {
         if (position >= 1 && position <= 9 && 
             gameState->board[position - 1] != gameState->player_1 && 
             gameState->board[position - 1] != gameState->player_2) {
-            // in fact, this logic should have been here, but I decided to update the grid only after "processing" on the server :))
-            // gameState->board[position - 1] = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
+            gameState->board[position - 1] = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
             validMove = true; // Move is valid, exit the loop
         } else {
             std::cout << "Invalid move. Try again.\n";
@@ -154,15 +151,45 @@ int humanMove(GameState *gameState) {
 }
 
 int aiMove(GameState *gameState) {
-    int position;
-    char curr_player = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
+    int position = -1;
+    char ai_player = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
+    char opponent = (ai_player == gameState->player_1) ? gameState->player_2 : gameState->player_1;
 
-    do {
-        position = rand() % 9;
-    } while (gameState->board[position] == gameState->player_1 || gameState->board[position] == gameState->player_2);
+    // Step 1: Check for winning move
+    for (int i = 0; i < 9; ++i) {
+        if (gameState->board[i] != gameState->player_1 && gameState->board[i] != gameState->player_2) {
+            gameState->board[i] = ai_player;
+            if (checkWin(ai_player, gameState->board)) {
+                position = i;
+                break;
+            }
+            gameState->board[i] = '1' + i; // revert temporary move
+        }
+    }
 
-    gameState->board[position] = (gameState->current_player == 1) ? gameState->player_1 : gameState->player_2;
-    std::cout << "AI (Player " << gameState->current_player << "(" << curr_player << ") chose position " << position + 1 << "\n";
+    // Step 2: Check for blocking opponent’s winning move
+    if (position == -1) {
+        for (int i = 0; i < 9; ++i) {
+            if (gameState->board[i] != gameState->player_1 && gameState->board[i] != gameState->player_2) {
+                gameState->board[i] = opponent;
+                if (checkWin(opponent, gameState->board)) {
+                    position = i;
+                    break;
+                }
+                gameState->board[i] = '1' + i; // revert temporary move
+            }
+        }
+    }
+
+    // Step 3: If no winning or blocking move, pick a random position
+    if (position == -1) {
+        do {
+            position = rand() % 9;
+        } while (gameState->board[position] == gameState->player_1 || gameState->board[position] == gameState->player_2);
+    }
+
+    gameState->board[position] = ai_player;
+    std::cout << "AI (Player " << gameState->current_player << "(" << ai_player << ")) chose position " << position + 1 << "\n";
 
     return position;
 }
@@ -273,9 +300,22 @@ bool userInput(std::string message) {
     }
 }
 
+static bool checkWin(char player, const char board[10]) {
+    return (
+        (board[0] == player && board[1] == player && board[2] == player) ||
+        (board[3] == player && board[4] == player && board[5] == player) ||
+        (board[6] == player && board[7] == player && board[8] == player) ||
+        (board[0] == player && board[3] == player && board[6] == player) ||
+        (board[1] == player && board[4] == player && board[7] == player) ||
+        (board[2] == player && board[5] == player && board[8] == player) ||
+        (board[0] == player && board[4] == player && board[8] == player) ||
+        (board[2] == player && board[4] == player && board[6] == player)
+    );
+}
+
 #ifdef DEBUG
 
-void DEBUG_STATE(gamestate_t *gameState) {
+static void DEBUG_STATE(gamestate_t *gameState) {
     std::cout << "GameState Debug Info:\n";
     std::cout << "Mode: ";
     switch (gameState->mode) {
