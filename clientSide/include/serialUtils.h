@@ -7,6 +7,7 @@
 
 const uint32_t BAUDRATE = 9600;
 const uint32_t BUFF_SIZE = 512;
+const int TIMEOUT_MS = 1000;
 extern const char *READY_MESSAGE;
 
 /**
@@ -39,8 +40,9 @@ std::string serializeMove(REQUEST_CMD req_cmd, int *move);
  * 
  * @param port The serial port to write to.
  * @param message The message to send.
+ * @return true if success, false otherwise
  */
-void writeToSerial(sp_port *port, std::string message);
+bool writeToSerial(sp_port *port, std::string message);
 
 /**
  * @brief Reads a message from the serial port.

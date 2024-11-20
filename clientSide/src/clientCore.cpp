@@ -219,7 +219,7 @@ bool loadGameState(gamestate_t *gameState) {
     std::unordered_map<std::string, std::string> config;
     if (!parseConfigFile(CFG_FILE_NAME, config)) {
         std::cerr << "Failed to load game state" << std::endl;
-        return false;;
+        return false;
     }
 
     int mode = std::stoi(config["GameState.mode"]);
@@ -312,35 +312,3 @@ static bool checkWin(char player, const char board[10]) {
         (board[2] == player && board[4] == player && board[6] == player)
     );
 }
-
-#ifdef DEBUG
-
-static void DEBUG_STATE(gamestate_t *gameState) {
-    std::cout << "GameState Debug Info:\n";
-    std::cout << "Mode: ";
-    switch (gameState->mode) {
-        case GameMode::ManVsAI:
-            std::cout << "Man vs AI";
-            break;
-        case GameMode::ManVsMan:
-            std::cout << "Man vs Man";
-            break;
-        case GameMode::AIVsAI:
-            std::cout << "AI vs AI";
-            break;
-    }
-    std::cout << "\n";
-    std::cout << "Current Player: " << (gameState->current_player == 1 ? "Player 1" : "Player 2") << "\n";
-    std::cout << "Board:\n";
-    for (size_t i = 0; i < BOARD_SIZE; ++i) {
-        std::cout << gameState->board[i] << ' ';
-        if ((i + 1) % 3 == 0) {
-            std::cout << '\n';
-        }
-    }
-    std::cout << "Player 1 Symbol: " << gameState->player_1 << "\n";
-    std::cout << "Player 2 Symbol: " << gameState->player_2 << "\n";
-    std::cout << "------------------------\n";
-}
-
-#endif // DEBUG

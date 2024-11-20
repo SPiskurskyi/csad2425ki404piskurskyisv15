@@ -3,12 +3,22 @@
 REQUEST_CMD deserializeCMD(const String &receivedMessage) {
     int delimiterPos = receivedMessage.indexOf('_');
     if (delimiterPos == -1) {
-        Serial.println("Delimiter '_' for command not found.");
         return REQUEST_CMD::Unknown;
     }
 
     String cmdString = receivedMessage.substring(0, delimiterPos);
-    return static_cast<REQUEST_CMD>(cmdString.toInt());
+    int cmdValue = cmdString.toInt();
+    
+    switch (cmdValue) {
+        case (int)REQUEST_CMD::InformNewGame:
+            return REQUEST_CMD::InformNewGame;
+        case (int)REQUEST_CMD::InformLoadGame:
+            return REQUEST_CMD::InformLoadGame;
+        case (int)REQUEST_CMD::RequestMove:
+            return REQUEST_CMD::RequestMove;    
+        default:
+            return REQUEST_CMD::Unknown;
+    }
 }
 
 int deserializePosition(const String &receivedMessage) {

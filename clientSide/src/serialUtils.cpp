@@ -5,7 +5,6 @@
 
 #include "serialUtils.h"
 
-const int TIMEOUT_MS = 1000;
 const char *READY_MESSAGE = "Arduino ready!";
 
 std::string serializeGameState(REQUEST_CMD req_cmd, gamestate_t *gameState) {
@@ -34,18 +33,19 @@ std::string serializeMove(REQUEST_CMD req_cmd, int *move) {
     return oss.str();
 }
 
-void writeToSerial(sp_port *port, std::string message) {
+bool writeToSerial(sp_port *port, std::string message) {
     int result = sp_blocking_write(port, message.c_str(), message.length(), TIMEOUT_MS);
 
     if (result < 0) {
         const char* error_message = sp_last_error_message();
         std::cerr << "Error writing to serial port: " << error_message << std::endl;
         sp_free_error_message(const_cast<char*>(error_message)); // Cast away const for cleanup
-        return;
+        return false;
     }
 #ifdef DEBUG
     std::cout << "Message sent: " << message << std::endl;
 #endif
+    return true;
 }
 
 std::string readFromSerial(sp_port *port) {
