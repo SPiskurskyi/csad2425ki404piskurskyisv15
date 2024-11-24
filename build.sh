@@ -10,6 +10,7 @@ show_usage() {
     echo "Options:"
     echo "  client        Build only the client project."
     echo "  server        Build only the server project (includes upload target)."
+    echo "  test          Execute server and client test targets."
     echo "  clean         Remove build directories for both client and server."
     echo "  doc           Generate documentation for both client and server."
     echo "  -h, --help    Display this help and exit."
@@ -41,6 +42,44 @@ build_project() {
     fi
 
     cd - > /dev/null
+}
+
+run_server_tests() {
+    local serial_port=${1:-"/dev/ttyUSB0"} # Default to "/dev/ttyUSB0" if not provided
+
+    echo "Running server tests..."
+    mkdir -p "$SERVER_DIR/build"
+
+    cd "$SERVER_DIR/build" || exit
+
+    cmake -DSERIAL_PORT_PATH="$serial_port" ..
+    cmake --build . --target test
+
+    cd - > /dev/null
+    echo "Server tests completed."
+}
+
+run_client_tests() {
+    echo "Running client tests..."
+    mkdir -p "$CLIENT_DIR/build"
+
+    cd "$CLIENT_DIR/build" || exit
+
+    cmake ..
+    cmake --build . --target tests
+
+    ./game_tests
+
+    echo "Generating coverage report..."
+    touch cov_output.logs
+    #kinda workaround with suppressing error logs
+    lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch > cov_output.logs 2>&1
+    genhtml coverage.info --output-directory coverage > cov_output.logs 2>&1
+
+    echo "Coverage report generated in: $CLIENT_DIR/build/coverage"
+
+    cd - > /dev/null
+    echo "Client tests completed."
 }
 
 generate_doc() {
@@ -75,6 +114,11 @@ case "$1" in
         serial_port=${2:-"/dev/ttyUSB0"} # Default to "/dev/ttyUSB0" if not provided
         build_project "$SERVER_DIR" "true" "$serial_port"
         ;;
+    test)
+        serial_port=${2:-"/dev/ttyUSB0"} # Default to "/dev/ttyUSB0" if not provided
+        run_server_tests "$serial_port"
+        run_client_tests
+        ;;
     doc)
         generate_doc
         ;;
@@ -94,5 +138,3 @@ case "$1" in
         fi
         ;;
 esac
-
-echo "Build process completed."

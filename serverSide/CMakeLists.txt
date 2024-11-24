@@ -8,6 +8,7 @@ set(BOARD "arduino:avr:uno")
 set(SERIAL_PORT_PATH "/dev/ttyUSB0" CACHE STRING "Serial port path")    
 
 set(SOURCE_FILE ${CMAKE_SOURCE_DIR}/serverSide.ino)
+set(TEST_FILE ${CMAKE_SOURCE_DIR}/test/test.ino)
 
 find_program(ARDUINO_CLI arduino-cli)
 if(NOT ARDUINO_CLI)
@@ -43,4 +44,12 @@ add_custom_target(upload
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     DEPENDS build
     COMMENT "Uploading Arduino sketch..."
+)
+
+add_custom_target(test
+    COMMAND ${ARDUINO_CLI} compile --fqbn ${BOARD} ${TEST_FILE} --build-property "build.extra_flags=-Iinclude"
+    COMMAND ${ARDUINO_CLI} upload -p ${SERIAL_PORT_PATH} --fqbn ${BOARD} ${TEST_FILE}
+    COMMAND script -q /dev/null -c "timeout 5 arduino-cli monitor -p /dev/ttyUSB0"
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Running tests..."
 )
